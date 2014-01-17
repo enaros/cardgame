@@ -10,6 +10,8 @@ define ["moment", "d3", "jquery-private", "Card", "CoordinateSystem"], (moment, 
 
     viewport = d3.select ".viewport"
 
+    # draw function
+    #-------------------------------------------------------------------
     draw = -> 
 
         d3table = viewport.selectAll(".table").data([table])
