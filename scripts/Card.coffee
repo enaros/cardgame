@@ -1,4 +1,4 @@
-
+# Card.coffee
 define ["CoordinateSystem"], (CoordinateSystem) ->
     class Card
         constructor: (@relativeToCS = new CoordinateSystem, @ownCS = new CoordinateSystem) ->
