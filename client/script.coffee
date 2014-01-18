@@ -1,3 +1,4 @@
+# test
 table = new Card 
 cards = [
     new Card table.ownCS
