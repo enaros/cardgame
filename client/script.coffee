@@ -19,7 +19,7 @@ draw = ->
     d3table.enter()
         .append("div")
         .attr("class", "table")
-        .style("-webkit-transform-origin", "500px 500px")
+        .style("-webkit-transform-origin", "50% 50%")
     d3table.style("-webkit-transform", (d) -> d.matrix3d())
     width= $(".table").width()
     height= $(".table").height()
@@ -35,12 +35,18 @@ draw = ->
         .style("-webkit-transform-origin", (d,i) -> 
             position = $(this).position()
             console.log this, position
-            (500-110*i)+"px "+ (500-0)+"px "
+            (width/2-110*i)+"px "+ (height/2-0)+"px "
         )
         .style("-webkit-transform", (d) -> d.matrix3d())
 
 @do1 = -> table.ownCS.matrix3d=new WebKitCSSMatrix() ; draw()
 @do2 = -> cards[0].relativeToCS =new CoordinateSystem() ; draw()
 @do3 = -> table.ownCS.matrix3d=new WebKitCSSMatrix().rotate 45, 0, 0 ; draw()
-
+@do4 = -> cards[0].ownCS.matrix3d =new WebKitCSSMatrix().rotate -45, 0, 0 ; draw()
+player = 0
+@changePlayer = -> 
+    player = (player+1) % 2
+    table.ownCS.matrix3d = new WebKitCSSMatrix().rotate 45, 0, 0 
+    table.ownCS.matrix3d = table.ownCS.matrix3d.rotate 0, 0, 180.1*player 
+    draw()
 # yo.cards[0].relativeToCS.matrix3d=yo.cards[0].relativeToCS.matrix3d.rotate(-75,0,0);yo.draw()
