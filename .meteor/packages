@@ -9,5 +9,4 @@ insecure
 preserve-inputs
 coffeescript
 less
-d3
 jquery
