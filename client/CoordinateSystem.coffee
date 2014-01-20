@@ -2,9 +2,9 @@ class @CoordinateSystem
  constructor: ({@parent, @ownMatrix}) ->
  	# todo: I want to have named parameters with default values, how???
  	@parent ?= null
- 	@ownMatrix ?= new WebKitCSSMatrix().translate(0,0,1)
+ 	@ownMatrix ?= new WebKitCSSMatrix()
  parent: null
- ownMatrix: new WebKitCSSMatrix().translate(0,0,1)
+ ownMatrix: new WebKitCSSMatrix()
  absoluteMatrix: ->     	
  	if @parent?
  		@parent.absoluteMatrix().multiply @ownMatrix
