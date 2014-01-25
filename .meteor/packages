@@ -10,3 +10,4 @@ preserve-inputs
 coffeescript
 less
 jquery
+d3

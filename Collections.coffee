@@ -1,3 +1,4 @@
+return
 @CardsCollection = new Meteor.Collection("cards");
 
 if (Meteor.isClient)
