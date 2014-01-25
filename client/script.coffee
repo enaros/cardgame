@@ -5,9 +5,9 @@ height = 0
 @camera = new CoordinateSystem parent: null
 @table = new CoordinateSystem parent: @camera
 @cards = [
-    (new CoordinateSystem parent: @table).do translate:{ x: 0  , y: 20}
-    (new CoordinateSystem parent: @table).do translate:{ x: 150, y: 20}
-    (new CoordinateSystem parent: @table).do translate:{ x: 300, y:20}
+    (new CoordinateSystem parent: @table).do translate:{ x: 0  , y: 20, z:15}
+    (new CoordinateSystem parent: @table).do translate:{ x: 150, y: 20, z:15}
+    (new CoordinateSystem parent: @table).do translate:{ x: 300, y: 20, z:15}
 ]
 
 camera.do translate: { z: -800}
@@ -30,8 +30,9 @@ Template.main.rendered = =>
         .append("div")
         .attr("class", "table")
     d3table
-        # .transition()
-        # .duration(1000)
+        .transition()
+        .duration(100)
+        .ease("linear")
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
 
     d3cards = viewport.selectAll(".card").data(@cards)        
@@ -44,7 +45,12 @@ Template.main.rendered = =>
                 d.parent = if d.showing then table else new CoordinateSystem parent: null 
             else
                 d.clicked = !d.clicked
-                d.do rotate:{ x:  (if d.clicked then 90 else -90 ) }
+                # d.do rotate:{ x:  (if d.clicked then 90 else -90 ) }
+                d.do(
+                    rotate     :{ x:  (if d.clicked then 179 else 181 ) }
+                    around     :{ y: 0 }
+                    translate  :{ y: -153 }
+                )
             draw()
         );
     d3cardsEnter
@@ -56,13 +62,15 @@ Template.main.rendered = =>
 
 
     d3cards
-        # .transition()
-        # .duration(1000)
+        .transition()
+        .duration(100)
+        .ease("linear")
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
 
     d3cards.exit()
-        # .transition()
-        # .duration(1000)
+        .transition()
+        .duration(100)
+        .ease("linear")
         .style("opacity", 0)
         .remove()
 
@@ -113,5 +121,5 @@ player = 0
         setTimeout ->
                 table.do({rotate:{z:180/steps}, around:{x:width/2 , y:height/2} })
                 draw()
-            , 16*i
+            , 100*i
 # yo.@cards[0].parent.matrix3d=yo.@cards[0].parent.matrix3d.rotate(-75,0,0);yo.draw()

@@ -163,14 +163,14 @@ d3.vector.interpolate = function(a, b) {
     var r = rotate(t),
         s = skew(t);
     return (
-      "matrix3d(1,0,0,0, 0,1,0,0, 0,0,1,0, " + perspective(t) + ")" +
-      "translate3d(" + translate(t) + ")" +
-      "rotateX(" + r[0] + "rad)" +
-      "rotateY(" + r[1] + "rad)" +
-      "rotateZ(" + r[2] + "rad)" +
-      "matrix3d(1,0,0,0, 0,1,0,0, 0," + s[2] + ",1,0, 0,0,0,1)" +
-      "matrix3d(1,0,0,0, 0,1,0,0, " + s[1] + ",0,1,0, 0,0,0,1)" +
-      "matrix3d(1,0,0,0, " + s[0] + ",1,0,0, 0,0,1,0, 0,0,0,1)" +
+      "matrix3d(1,0,0,0, 0,1,0,0, 0,0,1,0, " + perspective(t) + ") " +
+      "translate3d(" + translate(t).join("px,") + "px) " +
+      "rotateZ(" + r[2].toFixed(20) + "rad) " +
+      "rotateY(" + r[1].toFixed(20) + "rad) " +
+      "rotateX(" + r[0].toFixed(20) + "rad) " +
+      "matrix3d(1,0,0,0, 0,1,0,0, 0," + s[2].toFixed(20) + ",1,0, 0,0,0,1) " +
+      "matrix3d(1,0,0,0, 0,1,0,0, " + s[1].toFixed(20) + ",0,1,0, 0,0,0,1) " +
+      "matrix3d(1,0,0,0, " + s[0].toFixed(20) + ",1,0,0, 0,0,1,0, 0,0,0,1) " +
       "scale3d(" + scale(t) + ")");
   };
 }
@@ -325,7 +325,6 @@ function d3_vectorInterpolateParse(type, s) {
       matrix[i][j] = i < side && j < side ? +numbers[++k] : (i === j) & 1;
     }
   }
-  console.log(matrix)
   return matrix;
 }
 var d3_vectorInterpolateRegex = /^matrix(3d)?\(([^\)]+)\)$/;
@@ -338,6 +337,5 @@ d3.interpolators.push(function(a, b) {
     d3.vector.interpolate(
       d3_vectorInterpolateParse(ma[1], ma[2]),
       d3_vectorInterpolateParse(mb[1], mb[2]))); 
-  return r;
 });
 })()
