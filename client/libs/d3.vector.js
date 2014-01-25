@@ -1,341 +1,273 @@
-(function(){d3.vector = {};
-d3.vector.cross = function(a, b) {
-  // TODO how to handle non-3D vectors?
-  // TODO handle 7D vectors?
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-};
-d3.vector.dot = function(a, b) {
-  var s = 0,
-      i = -1,
-      n = Math.min(a.length, b.length);
-  while (++i < n) s += a[i] * b[i];
-  return s;
-};
-d3.vector.length = function(p) {
-  return Math.sqrt(d3.vector.dot(p, p));
-};
-d3.vector.normalize = function(p) {
-  var length = d3.vector.length(p);
-  return p.map(function(d) { return d / length; });
-};
-// 4x4 matrix determinant.
-d3.vector.determinant = function(matrix) {
-  var m = matrix[0].concat(matrix[1]).concat(matrix[2]).concat(matrix[3]);
-  return (
-    m[12] * m[9]  * m[6]  * m[3]  - m[8] * m[13] * m[6]  * m[3]  -
-    m[12] * m[5]  * m[10] * m[3]  + m[4] * m[13] * m[10] * m[3]  +
-    m[8]  * m[5]  * m[14] * m[3]  - m[4] * m[9]  * m[14] * m[3]  -
-    m[12] * m[9]  * m[2]  * m[7]  + m[8] * m[13] * m[2]  * m[7]  +
-    m[12] * m[1]  * m[10] * m[7]  - m[0] * m[13] * m[10] * m[7]  -
-    m[8]  * m[1]  * m[14] * m[7]  + m[0] * m[9]  * m[14] * m[7]  +
-    m[12] * m[5]  * m[2]  * m[11] - m[4] * m[13] * m[2]  * m[11] -
-    m[12] * m[1]  * m[6]  * m[11] + m[0] * m[13] * m[6]  * m[11] +
-    m[4]  * m[1]  * m[14] * m[11] - m[0] * m[5]  * m[14] * m[11] -
-    m[8]  * m[5]  * m[2]  * m[15] + m[4] * m[9]  * m[2]  * m[15] +
-    m[8]  * m[1]  * m[6]  * m[15] - m[0] * m[9]  * m[6]  * m[15] -
-    m[4]  * m[1]  * m[10] * m[15] + m[0] * m[5]  * m[10] * m[15]);
-};
-// Performs in-place Gauss-Jordan elimination.
-//
-// Based on Jarno Elonen's Python version (public domain):
-// http://elonen.iki.fi/code/misc-notes/python-gaussj/index.html
-d3.vector.gaussjordan = function(m, eps) {
-  if (!eps) eps = 1e-10;
+/*
+Copyright (c) 2014 David Buezas. Based on http://dev.w3.org/csswg/css3-transforms/#matrix-decomposing
+ and work from Stanislav Sopov (jquery unmatrix) and Jason Davies (d3 vector module)
 
-  var h = m.length,
-      w = m[0].length,
-      y = -1,
-      y2,
-      x;
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and 
+associated documentation files (the "Software"), to deal in the Software without restriction, 
+including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
 
-  while (++y < h) {
-    var maxrow = y;
+The above copyright notice and this permission notice shall be included in all copies or 
+substantial portions of the Software.
 
-    // Find max pivot.
-    y2 = y; while (++y2 < h) {
-      if (Math.abs(m[y2][y]) > Math.abs(m[maxrow][y]))
-        maxrow = y2;
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT 
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+(function(S){
+
+  d3.vector = {};
+
+    
+    // Returns an object with transform properties.
+    function getTransform(cssTransform) {
+        // Check if transform is 3d.
+        var is3d = Boolean(cssTransform.match(/matrix3d/));
+
+        // Convert matrix values to array.
+        cssTransform = cssTransform.match(/\(([\d\.\,\s-]+)\)/)[1];
+        var values = cssTransform.split(",");
+
+        // Convert values to floats. 
+        for (var i = 0, l = values.length; i < l; i++) {
+            values[i] = parseFloat(values[i]).toFixed(2);
+        }
+
+        // Matrix columns become arrays.
+        // Create 4x4 3d matrix.
+        var matrix = is3d ? [
+            [values[0], values[1], values[2], values[3]],
+            [values[4], values[5], values[6], values[7]],
+            [values[8], values[9], values[10], values[11]],
+            [values[12], values[13], values[14], values[15]]]
+        // Create 4x4 2d matrix.
+        : [
+            [values[0], values[1], 0, 0],
+            [values[2], values[3], 0, 0],
+            [0, 0, 1, 0],
+            [values[4], values[5], 0, 1]];
+
+        return unmatrix(matrix);
     }
 
-    // Swap.
-    var tmp = m[y];
-    m[y] = m[maxrow];
-    m[maxrow] = tmp;
+    // Returns null if the matrix cannot be decomposed, an object if it can.
+    function unmatrix(matrix) {
+        var rotateX;
+        var rotateY;
+        var rotateZ; 
+        var scaleX;
+        var scaleY;
+        var scaleZ;
+        var skew;
+        var skewX;
+        var skewY;
+        var x; 
+        var y;
+        var z;
 
-    // Singular?
-    if (Math.abs(m[y][y]) <= eps) return false;
+        // Normalize the matrix.
+        if (matrix[3][3] == 0) {
+            return null;
+        }
 
-    // Eliminate column y.
-    y2 = y; while (++y2 < h) {
-      var c = m[y2][y] / m[y][y];
-      x = y - 1; while (++x < w) {
-        m[y2][x] -= m[y][x] * c;
-      }
+        for (var i = 0; i < 4; i++) {
+            for (var j = 0; j < 4; j++) {
+                matrix[i][j] /= matrix[3][3];
+            }
+        }
+        
+        // perspectiveMatrix is used to solve for perspective, but it also provides an easy way to test for 
+        // singularity of the upper 3x3 component.
+        var perspectiveMatrix = matrix;
+
+        for (var i = 0; i < 3; i++) {
+           perspectiveMatrix[i][3] = 0;
+        }
+
+        perspectiveMatrix[3][3] = 1;
+
+        if (determinant(perspectiveMatrix) == 0) {
+           return null;
+        }
+
+        // First, isolate perspective.
+        var perspective;
+        if (matrix[0][3] != 0 || matrix[1][3] != 0 || matrix[2][3] != 0) {
+            // rightHandSide is the right hand side of the equation.
+            var rightHandSide = new Array();
+            rightHandSide[0] = matrix[0][3];
+            rightHandSide[1] = matrix[1][3];
+            rightHandSide[2] = matrix[2][3];
+            rightHandSide[3] = matrix[3][3];
+
+            // Solve the equation by inverting perspectiveMatrix and multiplying rightHandSide by the inverse.
+            inversePerspectiveMatrix = inverse(perspectiveMatrix);
+            transposedInversePerspectiveMatrix = transpose(inversePerspectiveMatrix);
+            perspective = multiplyVectorMatrix(rightHandSide, transposedInversePerspectiveMatrix);
+            
+            // Clear the perspective partition.
+            matrix[0][3] = matrix[1][3] = matrix[2][3] = 0;
+            matrix[3][3] = 1;
+        } else {
+            // No perspective.
+            perspective = new Array();
+            perspective[0] = perspective[1] = perspective[2] = 0;
+            perspective[3] = 1;
+        }
+
+        // Next take care of translation.
+        x = matrix[3][0];
+        //matrix[3][0] = 0;
+        y = matrix[3][1];
+        //matrix[3][1] = 0;
+        z = matrix[3][2];
+        //matrix[3][2] = 0;
+
+        // Now get scale and shear. 'row' is a 3 element array of 3 component vectors.
+        var row = [[],[],[]];
+
+        for (var i = 0; i < 3; i++) {
+            row[i][0] = matrix[i][0];
+            row[i][1] = matrix[i][1];
+            row[i][2] = matrix[i][2];
+        }
+
+        // Compute X scale factor and normalize first row.
+        scaleX = length(row[0]);
+        row[0] = normalize(row[0]);
+
+        // Compute XY shear factor and make 2nd row orthogonal to 1st.
+        skew = dot(row[0], row[1]);
+        row[1] = combine(row[1], row[0], 1.0, -skew);
+
+        // Now, compute Y scale and normalize 2nd row.
+        scaleY = length(row[1]);
+        row[1] = normalize(row[1]);
+        skew /= scaleY;
+        
+        // Compute XZ and YZ shears, orthogonalize 3rd row.
+        skewX = dot(row[0], row[2]);
+        row[2] = combine(row[2], row[0], 1.0, -skewX);
+        skewY = dot(row[1], row[2]);
+        row[2] = combine(row[2], row[1], 1.0, -skewY);
+
+        // Next, get Z scale and normalize 3rd row.
+        scaleZ = length(row[2]);
+        row[2] = normalize(row[2]);
+        skewX /= scaleZ;
+        skewY /= scaleZ;
+        
+        // At this point, the matrix (in rows) is orthonormal. Check for a coordinate system flip. If the 
+        // determinant is -1, then negate the matrix and the scaling factors.
+        var pdum3 = cross(row[1], row[2]);
+        
+        if (dot(row[0], pdum3) < 0) {
+            for (var i = 0; i < 3; i++) {
+                scaleX *= -1;
+                row[i][0] *= -1;
+                row[i][1] *= -1;
+                row[i][2] *= -1;
+            }
+        }
+
+        // Get the rotations.
+        rotateY = Math.asin(-row[0][2]);
+        if (Math.cos(rotateY) != 0) {
+            rotateX = Math.atan2(row[1][2], row[2][2]);
+            rotateZ = Math.atan2(row[0][1], row[0][0]);
+        } else {
+            rotateX = Math.atan2(-row[2][0], row[1][1]);
+            rotateZ = 0;
+        }
+        
+        return {
+            rotate: [rotateX, rotateY, rotateZ], 
+            scale: [scaleX, scaleY, scaleZ],
+            skew: [skewX, skewY],
+            translate: [x, y, z]
+        };
     }
-  }
 
-  // Backsubstitute.
-  y = h; while (--y >= 0) {
-    var c = m[y][y];
-    y2 = -1; while (++y2 < y) {
-      x = w; while (--x >= y) {
-        m[y2][x] -=  m[y][x] * m[y2][y] / c;
-      }
+    // Converts radians to degrees. 
+    function deg(rad) {
+        return rad * (180 / Math.PI);
     }
-    m[y][y] /= c;
-    // Normalize row y.
-    x = h - 1; while (++x < w) {
-      m[y][x] /= c;
+
+    // Returns determinant of matrix. 
+    function determinant(matrix) {
+        return S.Matrix(matrix).determinant();
+    }         
+    
+    // Returns inverse of matrix. 
+    function inverse(matrix) {
+        return S.Matrix(matrix).inverse().elements;
+    }         
+
+    // Returns transpose of matrix. 
+    function transpose(matrix) {
+        return S.Matrix(matrix).transpose().elements;
     }
-  }
-  return true;
-};
-// Find matrix inverse using Gauss-Jordan.
-d3.vector.inverse = function(m) {
-  var n = m.length
-      i = -1;
 
-  // Check if the matrix is square.
-  if (n !== m[0].length) return;
-
-  // Augment with identity matrix I to get AI.
-  m = m.map(function(row, i) {
-    var identity = new Array(n),
-        j = -1;
-    while (++j < n) identity[j] = i === j ? 1 : 0;
-    return row.concat(identity);
-  });
-
-  // Compute IA^-1.
-  d3.vector.gaussjordan(m);
-
-  // Remove identity matrix I to get A^-1.
-  while (++i < n) {
-    m[i] = m[i].slice(n);
-  }
-
-  return m;
-};
-d3.vector.multiply = function(a, b) {
-  var m = a.length,
-      n = b[0].length,
-      p = b.length,
-      i = -1,
-      j,
-      k;
-  if (p !== a[0].length) throw {"error": "columns(a) != rows(b); " + a[0].length + " != " + p};
-  var ab = new Array(m);
-  while (++i < m) {
-    ab[i] = new Array(n);
-    j = -1; while(++j < n) {
-      var s = 0;
-      k = -1; while (++k < p) s += a[i][k] * b[k][j];
-      ab[i][j] = s;
+    // Multiplies vector by matrix and returns transformed vector.
+    function multiplyVectorMatrix(vector, matrix) {
+        return S.Matrix(matrix).multiply(vector).elements;
     }
-  }
-  return ab;
-};
-d3.vector.transpose = function(a) {
-  var m = a.length,
-      n = a[0].length,
-      i = -1,
-      j,
-      b = new Array(n);
-  while (++i < n) {
-    b[i] = new Array(m);
-    j = -1; while (++j < m) b[i][j] = a[j][i];
-  }
-  return b;
-};
+
+    // Returns length of vector. 
+    function length(vector) {
+        return S.Vector(vector).modulus();
+    }   
+
+    // Normalizes length of vector to 1. 
+    function normalize(vector) {
+        return S.Vector(vector).toUnitVector().elements;
+    }
+
+    // Returns dot product of points. 
+    function dot(vector1, vector2) {
+        return S.Vector(vector1).dot(vector2);
+    }
+
+    // Returns cross product of vectors.
+    function cross(vector1, vector2) {
+        return S.Vector(vector1).cross(vector2).elements;
+    }
+    
+    function combine(a, b, ascl, bscl) {
+        var result = new Array();
+        result[0] = (ascl * a[0]) + (bscl * b[0]);
+        result[1] = (ascl * a[1]) + (bscl * b[1]);
+        // Both vectors are 3d. Return a 3d vector. 
+        if (a.length == 3 && b.length == 3) {
+            result[2] = (ascl * a[2]) + (bscl * b[2]);
+        }
+        return result;
+    }
+
+
 d3.vector.interpolate = function(a, b) {
-  a = d3_vectorInterpolateDecompose(a);
-  b = d3_vectorInterpolateDecompose(b);
-  var perspective = d3.interpolateArray(a.perspective, b.perspective),
-      translate = d3.interpolateArray(a.translate, b.translate),
+  if (!String(a).match(/^matrix/) || !String(b).match(/^matrix/)) return null;
+  a = getTransform(a);
+  b = getTransform(b);
+  var translate = d3.interpolateArray(a.translate, b.translate),
       rotate = d3.interpolateArray(a.rotate, b.rotate),
       skew = d3.interpolateArray(a.skew, b.skew),
       scale = d3.interpolateArray(a.scale, b.scale);
-  return function(t) {
-    var r = rotate(t),
-        s = skew(t);
+  return culo=function(t) {
+    var r = rotate(t);
     return (
-      "matrix3d(1,0,0,0, 0,1,0,0, 0,0,1,0, " + perspective(t) + ") " +
-      "translate3d(" + translate(t).join("px,") + "px) " +
-      "rotateZ(" + r[2].toFixed(20) + "rad) " +
-      "rotateY(" + r[1].toFixed(20) + "rad) " +
-      "rotateX(" + r[0].toFixed(20) + "rad) " +
-      "matrix3d(1,0,0,0, 0,1,0,0, 0," + s[2].toFixed(20) + ",1,0, 0,0,0,1) " +
-      "matrix3d(1,0,0,0, 0,1,0,0, " + s[1].toFixed(20) + ",0,1,0, 0,0,0,1) " +
-      "matrix3d(1,0,0,0, " + s[0].toFixed(20) + ",1,0,0, 0,0,1,0, 0,0,0,1) " +
+      "translate3d(" + translate(t).join("px,") + "px)" +
+      "skew(" + skew(t).join("rad,") + "rad)" +
+      "rotateZ(" + r[2].toFixed(20) + "rad)" +
+      "rotateY(" + r[1].toFixed(20) + "rad)" +
+      "rotateX(" + r[0].toFixed(20) + "rad)" +
       "scale3d(" + scale(t) + ")");
   };
 }
 
-// Based on <http://www.w3.org/TR/css3-2d-transforms/#matrix-decomposition>,
-// which in turn is based on The "unmatrix" method in "Graphics Gems II, edited
-// by Jim Arvo".
-function d3_vectorInterpolateDecompose(matrix) {
-  var dot = d3.vector.dot,
-      cross = d3.vector.cross,
-      length = d3.vector.length,
-      normalize = d3.vector.normalize,
-      combine = d3_vectorInterpolateCombine,
+d3.interpolators.push(d3.vector.interpolate);
 
-      perspective = new Array(4),
-      row = new Array(3),
-      rotate = new Array(3),
-      scale = new Array(3),
-      skew = new Array(3);
-
-  // Normalize the matrix.
-  if (matrix[3][3] === 0) return false;
-
-  for (var i = 0; i < 4; i++)
-    for (var j = 0; j < 4; j++)
-      matrix[i][j] /= matrix[3][3];
-
-  // perspectiveMatrix is used to solve for perspective, but it also provides
-  // an easy way to test for singularity of the upper 3x3 component.
-  perspectiveMatrix = matrix.map(function(row) { return row.slice(); });
-
-  for (var i = 0; i < 3; i++) perspectiveMatrix[i][3] = 0;
-
-  perspectiveMatrix[3][3] = 1;
-
-  if (d3.vector.determinant(perspectiveMatrix) === 0) return false;
-
-  // First, isolate perspective.
-  if (matrix[0][3] !== 0 || matrix[1][3] !== 0 || matrix[2][3] !== 0) {
-    // rightHandSide is the right hand side of the equation.
-    var rightHandSide = new Array(4);
-    rightHandSide[0] = matrix[0][3];
-    rightHandSide[1] = matrix[1][3];
-    rightHandSide[2] = matrix[2][3];
-    rightHandSide[3] = matrix[3][3];
-
-    // Solve the equation by inverting perspectiveMatrix and multiplying
-    // rightHandSide by the inverse.
-    var inversePerspectiveMatrix = d3.vector.inverse(perspectiveMatrix),
-        transposedInversePerspectiveMatrix = d3.vector.transpose(inversePerspectiveMatrix),
-        perspective = d3.vector.multiply([rightHandSide], transposedInversePerspectiveMatrix);
-
-    // Clear the perspective partition
-    matrix[0][3] = matrix[1][3] = matrix[2][3] = 0;
-    matrix[3][3] = 1;
-  } else {
-    // No perspective.
-    perspective[0] = perspective[1] = perspective[2] = 0;
-    perspective[3] = 1;
-  }
-
-  // Next take care of translation
-  var translate = new Array(3);
-  translate[0] = matrix[3][0];
-  matrix[3][0] = 0;
-  translate[1] = matrix[3][1];
-  matrix[3][1] = 0;
-  translate[2] = matrix[3][2];
-  matrix[3][2] = 0;
-
-  // Now get scale and shear. 'row' is a 3 element array of 3 component vectors
-  for (var i = 0; i < 3; i++)
-    row[i] = matrix[i].slice();
-
-  // Compute X scale factor and normalize first row.
-  scale[0] = length(row[0]);
-  row[0] = normalize(row[0]);
-
-  // Compute XY shear factor and make 2nd row orthogonal to 1st.
-  skew[0] = dot(row[0], row[1]);
-  combine(row[1], row[0], 1, -skew[0]);
-
-  // Now, compute Y scale and normalize 2nd row.
-  scale[1] = length(row[1]);
-  row[1] = normalize(row[1]);
-  skew[0] /= scale[1];
-
-  // Compute XZ and YZ shears, orthogonalize 3rd row
-  skew[1] = dot(row[0], row[2]);
-  combine(row[2], row[0], 1, -skew[1]);
-  skew[2] = dot(row[1], row[2]);
-  combine(row[2], row[1], 1, -skew[2]);
-
-  // Next, get Z scale and normalize 3rd row.
-  scale[2] = length(row[2]);
-  row[2] = normalize(row[2]);
-  skew[1] /= scale[2];
-  skew[2] /= scale[2];
-
-  // At this point, the matrix (in rows) is orthonormal.
-  // Check for a coordinate system flip.  If the determinant
-  // is -1, then negate the matrix and the scaling factors.
-  var pdum3 = cross(row[1], row[2]);
-  if (dot(row[0], pdum3) < 0) {
-    for (var i = 0; i < 3; i++) {
-      scale[0] *= -1;
-      row[i][0] *= -1;
-      row[i][1] *= -1;
-      row[i][2] *= -1;
-    }
-  }
-
-  // Now, get the rotations out.
-  rotate[1] = Math.asin(-row[0][2]);
-  if (Math.cos(rotate[1]) !== 0) {
-    rotate[0] = Math.atan2(row[1][2], row[2][2]);
-    rotate[2] = Math.atan2(row[0][1], row[0][0]);
-  } else {
-    rotate[0] = Math.atan2(-row[2][0], row[1][1]);
-    rotate[2] = 0;
-  }
-
-  return {
-    translate: translate,
-    perspective: perspective,
-    rotate: rotate,
-    scale: scale,
-    skew: skew
-  };
-};
-
-function d3_vectorInterpolateCombine(a, b, ascl, bscl) {
-  var n = a.length,
-      i = -1;
-  while (++i < n) {
-    a[i] = ascl * a[i] + bscl * b[i];
-  }
-}
-
-function d3_vectorInterpolateParse(type, s) {
-  // TODO cope with 2D transformations
-  var numbers = s.split(/[^\d-.]+/),
-      matrix = new Array(4),
-      i = -1,
-      j,
-      k = -1,
-      side = type === "3d" ? 4 : 2;
-
-  while (++i < 4) {
-    matrix[i] = new Array(4);
-    j = -1; while (++j < 4) {
-      matrix[i][j] = i < side && j < side ? +numbers[++k] : (i === j) & 1;
-    }
-  }
-  return matrix;
-}
-var d3_vectorInterpolateRegex = /^matrix(3d)?\(([^\)]+)\)$/;
-
-d3.interpolators.push(function(a, b) {
-  var ma, mb;
-  var r= (
-    (ma = String(a).match(d3_vectorInterpolateRegex)) && 
-    (mb = String(b).match(d3_vectorInterpolateRegex)) &&
-    d3.vector.interpolate(
-      d3_vectorInterpolateParse(ma[1], ma[2]),
-      d3_vectorInterpolateParse(mb[1], mb[2]))); 
-});
-})()
+})(Sylvester)
