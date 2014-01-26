@@ -1,6 +1,7 @@
 /*
-Copyright (c) 2014 David Buezas. Based on from Stanislav Sopov (jquery unmatrix) which in term 
-is based in http://dev.w3.org/csswg/css3-transforms/#matrix-decomposing
+Copyright (c) 2014 David Buezas. Based on jquery unmatrix plugin (from Stanislav Sopov https://github.com/stassop/unmatrixk) and d3.vector.js 
+(Jason Davies) both of which are based on http://dev.w3.org/csswg/css3-transforms/#matrix-decomposing, 
+which in term is based on Graphics Gems II, edited by Jim Arvo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and 
 associated documentation files (the "Software"), to deal in the Software without restriction, 
@@ -22,49 +23,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
     // Returns null if the matrix cannot be decomposed, an object if it can.
     window.unmatrix = function(matrix) {
-        // todo: use the mxy components of the WebKitCSSMatrix directly
         // todo: export unmatrix in a less nasty way?
-        matrix = matrix.toString();
-        // Check if transform is 3d.
-        var is3d = Boolean(matrix.match(/matrix3d/));
-
-        // Convert matrix values to array.
-        matrix = matrix.match(/\(([\d\.\,\s-]+)\)/)[1];
-        var values = matrix.split(",");
-
-        // Convert values to floats. 
-        for (var i = 0, l = values.length; i < l; i++) {
-            values[i] = parseFloat(values[i]).toFixed(2);
+        var matrix = [
+            [matrix.m11, matrix.m12, matrix.m13, matrix.m14],
+            [matrix.m21, matrix.m22, matrix.m23, matrix.m24],
+            [matrix.m31, matrix.m32, matrix.m33, matrix.m34],
+            [matrix.m41, matrix.m42, matrix.m43, matrix.m44]
+        ]
+        // d = decomposition
+        var d = {
+            rotate:     { x: null, y: null, z: null }, 
+            scale:      { x: null, y: null, z: null },
+            skew:       { x: null, y: null          },
+            translate:  { x: null, y: null, z: null }
         }
-
-        // Matrix columns become arrays.
-        // Create 4x4 3d matrix.
-        var matrix = is3d ? [
-            [values[0], values[1], values[2], values[3]],
-            [values[4], values[5], values[6], values[7]],
-            [values[8], values[9], values[10], values[11]],
-            [values[12], values[13], values[14], values[15]]]
-        // Create 4x4 2d matrix.
-        : [
-            [values[0], values[1], 0, 0],
-            [values[2], values[3], 0, 0],
-            [0, 0, 1, 0],
-            [values[4], values[5], 0, 1]];
-
-
-        var rotateX;
-        var rotateY;
-        var rotateZ; 
-        var scaleX;
-        var scaleY;
-        var scaleZ;
+        
         var skew;
-        var skewX;
-        var skewY;
-        var x; 
-        var y;
-        var z;
-
+        
         // Normalize the matrix.
         if (matrix[3][3] == 0) {
             return null;
@@ -116,11 +91,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
         }
 
         // Next take care of translation.
-        x = matrix[3][0];
+        d.translate.x = matrix[3][0];
         //matrix[3][0] = 0;
-        y = matrix[3][1];
+        d.translate.y = matrix[3][1];
         //matrix[3][1] = 0;
-        z = matrix[3][2];
+        d.translate.z = matrix[3][2];
         //matrix[3][2] = 0;
 
         // Now get scale and shear. 'row' is a 3 element array of 3 component vectors.
@@ -133,7 +108,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
         }
 
         // Compute X scale factor and normalize first row.
-        scaleX = length(row[0]);
+        d.scale.x = length(row[0]);
         row[0] = normalize(row[0]);
 
         // Compute XY shear factor and make 2nd row orthogonal to 1st.
@@ -141,21 +116,21 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
         row[1] = combine(row[1], row[0], 1.0, -skew);
 
         // Now, compute Y scale and normalize 2nd row.
-        scaleY = length(row[1]);
+        d.scale.y = length(row[1]);
         row[1] = normalize(row[1]);
-        skew /= scaleY;
+        skew /= d.scale.y;
         
         // Compute XZ and YZ shears, orthogonalize 3rd row.
-        skewX = dot(row[0], row[2]);
-        row[2] = combine(row[2], row[0], 1.0, -skewX);
-        skewY = dot(row[1], row[2]);
-        row[2] = combine(row[2], row[1], 1.0, -skewY);
+        d.skew.x = dot(row[0], row[2]);
+        row[2] = combine(row[2], row[0], 1.0, -d.skew.x);
+        d.skew.y = dot(row[1], row[2]);
+        row[2] = combine(row[2], row[1], 1.0, -d.skew.y);
 
         // Next, get Z scale and normalize 3rd row.
-        scaleZ = length(row[2]);
+        d.scale.z = length(row[2]);
         row[2] = normalize(row[2]);
-        skewX /= scaleZ;
-        skewY /= scaleZ;
+        d.skew.x /= d.scale.z;
+        d.skew.y /= d.scale.z;
         
         // At this point, the matrix (in rows) is orthonormal. Check for a coordinate system flip. If the 
         // determinant is -1, then negate the matrix and the scaling factors.
@@ -163,7 +138,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
         
         if (dot(row[0], pdum3) < 0) {
             for (var i = 0; i < 3; i++) {
-                scaleX *= -1;
+                d.scale.x *= -1;
                 row[i][0] *= -1;
                 row[i][1] *= -1;
                 row[i][2] *= -1;
@@ -171,27 +146,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
         }
 
         // Get the rotations.
-        rotateY = Math.asin(-row[0][2]);
-        if (Math.cos(rotateY) != 0) {
-            rotateX = Math.atan2(row[1][2], row[2][2]);
-            rotateZ = Math.atan2(row[0][1], row[0][0]);
+        d.rotate.y = deg(Math.asin(-row[0][2]));
+        if (Math.cos(d.rotate.y) != 0) {
+            d.rotate.x = deg(Math.atan2(row[1][2], row[2][2]));
+            d.rotate.z = deg(Math.atan2(row[0][1], row[0][0]));
         } else {
-            rotateX = Math.atan2(-row[2][0], row[1][1]);
-            rotateZ = 0;
+            d.rotate.x = deg(Math.atan2(-row[2][0], row[1][1]));
+            d.rotate.z = 0;
         }
         
-        return {
-            rotate: { x: deg(rotateX), y: deg(rotateY), z: deg(rotateZ) }, 
-            scale: { x: scaleX, y: scaleY, z: scaleZ },
-            skew: { x: skewX, y: skewY },
-            translate: { x: x, y: y, z: z }
-        }
-        // return {
-        //     rotate: [rotateX, rotateY, rotateZ], 
-        //     scale: [scaleX, scaleY, scaleZ],
-        //     skew: [skewX, skewY],
-        //     translate: [x, y, z]
-        // }
+        return d;
     }
 
     // Converts radians to degrees. 
