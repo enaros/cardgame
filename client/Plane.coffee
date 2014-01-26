@@ -1,4 +1,4 @@
-class @CoordinateSystem
+class @Plane
     constructor: ({parent, @ownMatrix}) ->
         # todo: I want to have named parameters with default values, how???
         @ownMatrix ?= new WebKitCSSMatrix()
@@ -9,7 +9,7 @@ class @CoordinateSystem
         parent:
             get: -> @_parent
             set: (newParent) ->                
-                # Steps I'm taking to animate the change of parent CS (CoordinateSystem):
+                # Steps I'm taking to animate the change of parent CS (Plane):
                 # 1: Compute our current real world coordinates (the absolute transform oldM3d)
                 # 2: Change the parent CS 
                 #      (note that now our real world coordinates changed newM3d)
@@ -34,7 +34,7 @@ class @CoordinateSystem
 
                 oldM3d_to_newM3d = newM3d_to_oldM3d.inverse()
                 t = unmatrix(oldM3d_to_newM3d)
-                t.duration = 1000;
+                t.duration = 10000;
                 this.do t
 
                 @_parent
@@ -85,7 +85,7 @@ class @CoordinateSystem
         # o.rotate
         # o.around
 
-        o.duration ?= 1000
+        o.duration ?= 10000
         o.delay ?= 0
         o.easing ?= d3.ease("cubic-in-out")
         o.start ?= +new Date()

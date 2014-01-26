@@ -2,12 +2,12 @@ width = 0
 height = 0
 
 
-@camera = new CoordinateSystem parent: null
-@table = new CoordinateSystem parent: @camera
+@camera = new Plane parent: null
+@table = new Plane parent: @camera
 @cards = [
-    (new CoordinateSystem parent: @table).do translate:{ x: 0  , y: 20, z:1}, duration: 0
-    (new CoordinateSystem parent: @table).do translate:{ x: 150, y: 20, z:1}, duration: 0
-    (new CoordinateSystem parent: @table).do translate:{ x: 300, y: 20, z:1}, duration: 0
+    (new Plane parent: @table).do translate:{ x: 0  , y: 20, z:1}, duration: 0
+    (new Plane parent: @table).do translate:{ x: 150, y: 20, z:1}, duration: 0
+    (new Plane parent: @table).do translate:{ x: 300, y: 20, z:1}, duration: 0
 ]
 
 camera.do translate: { z: -800}
