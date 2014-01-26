@@ -5,9 +5,9 @@ height = 0
 @camera = new CoordinateSystem parent: null
 @table = new CoordinateSystem parent: @camera
 @cards = [
-    (new CoordinateSystem parent: @table).do translate:{ x: 0  , y: 20, z:15}
-    (new CoordinateSystem parent: @table).do translate:{ x: 150, y: 20, z:15}
-    (new CoordinateSystem parent: @table).do translate:{ x: 300, y: 20, z:15}
+    (new CoordinateSystem parent: @table).do translate:{ x: 0  , y: 20, z:1}, duration: 0
+    (new CoordinateSystem parent: @table).do translate:{ x: 150, y: 20, z:1}, duration: 0
+    (new CoordinateSystem parent: @table).do translate:{ x: 300, y: 20, z:1}, duration: 0
 ]
 
 camera.do translate: { z: -800}
@@ -17,8 +17,7 @@ Template.main.rendered = =>
     @table.do rotate:{ x:45 }, around:{ y:height/2 }
 
     window.viewport = d3.select ".viewport"
-    draw()
-    @changePlayer()
+    setInterval (()-> draw()), 16
 
 
  # draw function
@@ -30,9 +29,6 @@ Template.main.rendered = =>
         .append("div")
         .attr("class", "table")
     d3table
-        .transition()
-        .duration(100)
-        .ease("linear")
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
 
     d3cards = viewport.selectAll(".card").data(@cards)        
@@ -40,18 +36,40 @@ Template.main.rendered = =>
         .append("div")
         .attr("class", "card")
         .on("mousedown", (d) ->
+            d.clicked ?= -1
+            d.standing ?= 1
+
             if d3.event.shiftKey
-                d.showing = !d.showing
-                d.parent = if d.showing then table else new CoordinateSystem parent: null 
-            else
-                d.clicked = !d.clicked
-                # d.do rotate:{ x:  (if d.clicked then 90 else -90 ) }
+                d.parent = switch d.parent
+                    when table then null
+                    when null then table
+                    # when camera then table
+
+            else if d3.event.altKey
+                d.standing *= -1                
                 d.do(
-                    rotate     :{ x:  (if d.clicked then 179 else 181 ) }
-                    around     :{ y: 0 }
-                    translate  :{ y: -153 }
+                    rotate   : { x:  90 * d.standing * d.clicked}
+                    around   : { y: 0 }
+                    duration : 1000
                 )
-            draw()
+            else
+                d.clicked *= -1
+                d.do(
+                    translate: { z: 153/2 *d.clicked }
+                    duration : 500
+                    ease : d3.ease("cubic-in")
+                )
+                .do(
+                    translate:{ z: -153/2 * d.clicked }
+                    duration : 500
+                    delay    : 500
+                    ease : d3.ease("cubic-out")
+                )
+                d.do(
+                    rotate   : { x:  180 }
+                    around   : { y: 153/2 }
+                    duration : 1000
+                )
         );
     d3cardsEnter
         .append("div")
@@ -62,30 +80,38 @@ Template.main.rendered = =>
 
 
     d3cards
-        .transition()
-        .duration(100)
-        .ease("linear")
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
+        .style("z-index", (d) -> 
+            #todo compute distance and set z-index to fix chrome aparently missing z-buffer 
+        )
 
     d3cards.exit()
-        .transition()
-        .duration(100)
-        .ease("linear")
         .style("opacity", 0)
         .remove()
 
 $(document).keydown (e) -> 
-    if !e.shiftKey
+
+    if not e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
-                table.do({rotate:{z:10}, around:{x:width/2 , y:height/2} })
+                table.do({rotate:{z:180}, around:{x:width/2 , y:height/2} })
             when 38  
                 table.do({rotate:{x:10}, around:{x:width/2 , y:height/2} })
             when 39  
-                table.do({rotate:{z:-10}, around:{x:width/2 , y:height/2} })
+                table.do({rotate:{z:-180}, around:{x:width/2 , y:height/2} })
             when 40  
                 table.do({rotate:{x:-10}, around:{x:width/2 , y:height/2} })
-    else
+    if not e.shiftKey and e.altKey
+        switch e.keyCode
+            when 37  
+                camera.do({rotate:{z:180}, around:{x:width/2 , y:height/2} })
+            when 38  
+                camera.do({rotate:{x:10}, around:{x:width/2 , y:height/2} })
+            when 39  
+                camera.do({rotate:{z:-180}, around:{x:width/2 , y:height/2} })
+            when 40  
+                camera.do({rotate:{x:-10}, around:{x:width/2 , y:height/2} })
+    if e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
                 camera.do translate:{x:10}
@@ -95,31 +121,3 @@ $(document).keydown (e) ->
                 camera.do translate:{x:-10}
             when 40  
                 camera.do translate:{z:-10}
-    draw()
-    e.preventDefault()
-
-
-
-showCardActive = no
-@showCard = -> 
-    cards[0].parent = if showCardActive then table else new CoordinateSystem parent: null 
-    draw()
-    showCardActive = not showCardActive
-
-player = 0
-@changePlayer1 = -> 
-    player = (player+1) % 2
-    table.do({rotate:{z:179.999}, around:{x:width/2 , y:height/2} })
-    draw()
-
-@changePlayer = -> 
-    # todo: think how to use d3 to interpolate transformations in a sound way
-    player = (player+1) % 2
-    steps = 50;
-    i=0
-    while i++ < steps
-        setTimeout ->
-                table.do({rotate:{z:180/steps}, around:{x:width/2 , y:height/2} })
-                draw()
-            , 100*i
-# yo.@cards[0].parent.matrix3d=yo.@cards[0].parent.matrix3d.rotate(-75,0,0);yo.draw()
