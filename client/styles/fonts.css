@@ -3,6 +3,11 @@ body {
     font-family: arial;
     font-size: 12px;
 }
+
+.viewport { 
+    background: -webkit-gradient(radial, center center, 360, center center, 1200, from(rgba(0,0,0,0)), to(rgba(0,0,0,1))), url(/tweed.png)
+}
+
 code {
     font-family: courier;
     font-size: 11px;
@@ -25,4 +30,18 @@ code {
 
 #instructions li {
     margin-top: 2px;
+}
+
+footer {
+    /*width: 220px;*/
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    margin-left: -102px;
+    box-shadow: 1px 1px 1px 0px #111;
+    background: #333;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-weight: bold;
+    color: white;
 }
