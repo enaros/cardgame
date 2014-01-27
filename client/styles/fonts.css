@@ -1,0 +1,28 @@
+
+body {
+    font-family: arial;
+    font-size: 12px;
+}
+code {
+    font-family: courier;
+    font-size: 11px;
+    background: #aaa;
+    padding: 0 2px;
+    border-radius: 2px;
+    margin: 2px;
+    box-shadow: 1px 1px 1px 0px #222;
+}
+
+#instructions {
+    position: absolute;
+    bottom: 0;
+    background: #ccc;
+    border-radius: 2px;
+    margin: 5px;
+    padding: 5px;
+    box-shadow: 1px 1px 1px 0px #222;
+}
+
+#instructions li {
+    margin-top: 2px;
+}
