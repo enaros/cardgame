@@ -1,6 +1,8 @@
 /*
-Copyright (c) 2014 David Buezas. Based on jquery unmatrix plugin (from Stanislav Sopov https://github.com/stassop/unmatrixk) and d3.vector.js 
-(Jason Davies) both of which are based on http://dev.w3.org/csswg/css3-transforms/#matrix-decomposing, 
+Copyright (c) 2014 David Buezas.
+Based on jquery unmatrix plugin (from Stanislav Sopov https://github.com/stassop/unmatrixk) 
+and d3.vector.js (from Jason Davies https://github.com/jasondavies/d3/blob/78ab78e58e37e26deb82cdd2d3a9604baa93ba59/d3.vector.js)
+both of which are based on http://dev.w3.org/csswg/css3-transforms/#matrix-decomposing, 
 which in term is based on Graphics Gems II, edited by Jim Arvo
 */
 

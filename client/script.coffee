@@ -26,7 +26,7 @@ cilinder = () ->
     loops = 3
     radius = 200 
     cardsCount = 40#
-    for i in [1..cardsCount]
+    for i in [9..cardsCount-1]
         plane = new Plane parent: @table
         plane.do({
             translate:{
@@ -45,8 +45,8 @@ cilinder = () ->
             #     y: Math.cos(+i*loops/cardsCount) * radius
             #     z: +i / loops *20
             # }, 
-            duration: 1000 *i,
-            delay: 500*i,
+            duration: 100 *i,
+            delay: 10*i,
             ease: d3.ease("cubic-in-out")
         })
         plane.do({
