@@ -47,7 +47,7 @@
     left: 0;
     background: #333;
     border-radius: 10px;
-    -webkit-backface-visibility: hidden;   
+    /*-webkit-backface-visibility: hidden;   */
     -webkit-transform-origin: 0 0;
     /*background-image: url(http://6269-9001.zippykid.netdna-cdn.com/wp-content/uploads/2013/11/Dark-Wood-Background.jpg);*/
 }

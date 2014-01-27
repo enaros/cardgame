@@ -95,7 +95,97 @@ Template.main.rendered = =>
     window.viewport = d3.select ".viewport"
     setInterval (()-> draw()), 16
 
+    ############## DEMO #############
+    $("#hole #button").on "click", ()->
+        table.do({rotate:{z:180*5}, around:{x:width/2 , y:height/2}, duration: 25000 })
+        cardsCount = 40
+        columns = 10
+        for card, i in cards
+            card.transformQueue = []
+            card.ownMatrix = new WebKitCSSMatrix()
+            card.do({
+                translate:{
+                    x: width/2
+                    y: height/2
+                    z: 1
+                }
+                duration: 0,
+            })
+            card.do({
+                translate:{
+                    x: 110 * (i % columns ) - width/2
+                    y: Math.floor(i / columns) * 160 - height/2
+                }
+                duration: 100 *i,
+                delay: 10*i,
+                ease: d3.ease("bounce")
+            })
+            ((i, card) -> 
+                setTimeout ( () -> 
+                    card.parent = null
+                    if (i%2)
+                        card.do(
+                            rotate   : { x:  180 * 3 }
+                            around   : { y: 153/2 }
+                            duration : 1000
+                        )
+                ), 8000 - 200 * i
+                setTimeout ( () -> card.parent = table), 2000 + 200 * i + 10000 
+                setTimeout ( () -> 
+                    card.do(
+                        translate: { z: 153/2 *(1 -2* (i%2))}
+                        duration : 500
+                        ease : d3.ease("cubic-in")
+                    )
+                    card.do(
+                        translate:{ z: -153/2 *(1 -2* (i%2))}
+                        duration : 1000
+                        delay    : 500
+                        ease : d3.ease("bounce")
+                    )
+                    card.do(
+                        rotate   : { x:  180 * 1 + (i%2) * 180 }
+                        around   : { y: 153/2 }
+                        duration : 1000
+                    )
+                ), 30 * i + 20000
+                setTimeout ( () -> 
+                    loops = 3
+                    radius = 200 
+                    cardsCount = 40#
+                    card.do(unmatrix(card.ownMatrix.inverse()))
+                    card.do({
+                        translate:{
+                            x: 200
+                            y: 200
+                            z: Math.floor(loops / cardsCount * i)*200
+                        }
+                        rotate: {
+                            z: loops * 360 / cardsCount * i
+                        }
+                        around: {
+                            x: 200
+                        }
+                        # translate: { 
+                        #     x: Math.sin(+i*loops/cardsCount) * radius
+                        #     y: Math.cos(+i*loops/cardsCount) * radius
+                        #     z: +i / loops *20
+                        # }, 
+                        duration: 100 *i,
+                        delay: 1000+10*i,
+                        ease: d3.ease("cubic-in-out")
+                    })
+                    card.do({
+                        rotate: {
+                            x:90
+                            z:90
+                        }
+                    })
+                    
+                ), 30 * i + 25000
+            )(i, card)
 
+    ############# END DEMO ####################
  # draw function
 #-------------------------------------------------------------------
 @draw = -> 
@@ -105,7 +195,7 @@ Template.main.rendered = =>
         .append("div")
         .attr("class", "table")
         .on("click", (d) ->
-            table.do({ rotate:{z:180}, around:{x:width/2 , y:height/2} })
+            #table.do({ rotate:{z:180}, around:{x:width/2 , y:height/2} })
         )
     d3table
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
@@ -136,8 +226,9 @@ Template.main.rendered = =>
                 d.do(
                     rotate   : { x:  90 * d.standing * d.clicked}
                     around   : { y: 0 }
-                    duration : 5000
-                    ease   : (x)-> Math.sin(x*Math.PI*15)
+                    duration : 500
+                    ease    : d3.ease("bounce")
+                    #ease   : (x)-> Math.sin(x*Math.PI*15)
                 )
             else
                 d.clicked *= -1
@@ -181,7 +272,7 @@ $(document).keydown (e) ->
     if not e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
-                table.do({rotate:{z:180*3}, around:{x:width/2 , y:height/2}, duration: 10000 })
+                table.do({rotate:{z:180}, around:{x:width/2 , y:height/2} })
             when 38  
                 table.do({rotate:{x:10}, around:{x:width/2 , y:height/2} })
             when 39  
@@ -208,3 +299,5 @@ $(document).keydown (e) ->
                 camera.do translate:{x:-10}
             when 40  
                 camera.do translate:{z:-10}
+
+        
