@@ -1,15 +1,84 @@
+# skybox: http://en.wikibooks.org/wiki/Game_Creation_with_XNA/3D_Development/Skybox
+# 
 width = 0
 height = 0
 
 
 @camera = new Plane parent: null
 @table = new Plane parent: @camera
-@cards = [
-    (new Plane parent: @table).do translate:{ x: 0  , y: 20, z:1}, duration: 0
-    (new Plane parent: @table).do translate:{ x: 150, y: 20, z:1}, duration: 0
-    (new Plane parent: @table).do translate:{ x: 300, y: 20, z:1}, duration: 0
-]
 
+
+@skybox = [
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+    # (new Plane parent: @camera).do translate:{ x: 0  , y: 0, z:100}, duration: 0
+]
+#############
+#cards*****
+##########
+#
+@cards = []
+
+cilinder = () -> 
+    loops = 3
+    radius = 200 
+    cardsCount = 40#
+    for i in [1..cardsCount]
+        plane = new Plane parent: @table
+        plane.do({
+            translate:{
+                x: 200
+                y: 200
+                z: Math.floor(loops / cardsCount * i)*200
+            }
+            rotate: {
+                z: loops * 360 / cardsCount * i
+            }
+            around: {
+                x: 200
+            }
+            # translate: { 
+            #     x: Math.sin(+i*loops/cardsCount) * radius
+            #     y: Math.cos(+i*loops/cardsCount) * radius
+            #     z: +i / loops *20
+            # }, 
+            duration: 1000 *i,
+            delay: 500*i,
+            ease: d3.ease("cubic-in-out")
+        })
+        plane.do({
+            rotate: {
+                x:90
+                z:90
+            }
+        })
+        
+        @cards.push (plane)
+        
+cilinder()
+
+grid = ()-> 
+    cardsCount = 40
+    columns = 10
+    for i in [1..cardsCount]
+        plane = new Plane parent: @table
+        plane.do({
+            translate:{
+                x: 110 * (i % columns )
+                y: Math.floor(i / columns) * 160
+                z: 1
+            }
+            duration: 100 *i,
+            delay: 50*i,
+            ease: d3.ease("bounce")
+        })
+        @cards.push (plane)
+# grid()
+#
+########
 camera.do translate: { z: -800}
 Template.main.rendered = =>
     width= $(".viewport").width()
@@ -28,29 +97,40 @@ Template.main.rendered = =>
     d3table.enter()
         .append("div")
         .attr("class", "table")
+        .on("click", (d) ->
+            table.do({ rotate:{z:180}, around:{x:width/2 , y:height/2} })
+        )
     d3table
+        .style("-webkit-transform", (d) -> d.absoluteMatrix())
+    
+    d3skybox = viewport.selectAll(".skybox").data(@skybox)
+    d3skybox.enter()
+        .append("div")
+        .attr("class", (d, i) -> "skybox nth"+i)
+        
+    d3skybox
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
 
     d3cards = viewport.selectAll(".card").data(@cards)        
     d3cardsEnter = d3cards.enter()
         .append("div")
         .attr("class", "card")
-        .on("mousedown", (d) ->
+        .on("click", (d) ->
             d.clicked ?= -1
             d.standing ?= 1
-
-            if d3.event.shiftKey
+            if d3.event.shiftKey or d3.event.touches?.length == 2
                 d.parent = switch d.parent
                     when table then null
                     when null then table
-                    # when camera then table
+                    when camera then table
 
-            else if d3.event.altKey
+            else if d3.event.altKey or d3.event.touches?.length == 3
                 d.standing *= -1                
                 d.do(
                     rotate   : { x:  90 * d.standing * d.clicked}
                     around   : { y: 0 }
-                    duration : 1000
+                    duration : 5000
+                    ease   : (x)-> Math.sin(x*Math.PI*15)
                 )
             else
                 d.clicked *= -1
@@ -61,9 +141,9 @@ Template.main.rendered = =>
                 )
                 .do(
                     translate:{ z: -153/2 * d.clicked }
-                    duration : 500
+                    duration : 1000
                     delay    : 500
-                    ease : d3.ease("cubic-out")
+                    ease : d3.ease("bounce")
                 )
                 d.do(
                     rotate   : { x:  180 }
@@ -81,7 +161,7 @@ Template.main.rendered = =>
 
     d3cards
         .style("-webkit-transform", (d) -> d.absoluteMatrix())
-        .style("z-index", (d) -> 
+        .style("z-index", (d) -> 1
             #todo compute distance and set z-index to fix chrome aparently missing z-buffer 
         )
 
@@ -94,7 +174,7 @@ $(document).keydown (e) ->
     if not e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
-                table.do({rotate:{z:180}, around:{x:width/2 , y:height/2} })
+                table.do({rotate:{z:180*3}, around:{x:width/2 , y:height/2}, duration: 10000 })
             when 38  
                 table.do({rotate:{x:10}, around:{x:width/2 , y:height/2} })
             when 39  

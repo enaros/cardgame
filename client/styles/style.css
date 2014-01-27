@@ -27,6 +27,7 @@
     -webkit-backface-visibility: hidden;   
     background-size: 200% 100%;
     background-image: url(/card.jpg);
+    opacity: .9;
 }
 
 .card .front{
@@ -44,7 +45,46 @@
     top: 0;
     left: 0;
     background: red;
-    /*-webkit-transition: all 1s;*/
+    -webkit-backface-visibility: hidden;   
     -webkit-transform-origin: 0 0;
     background-image: url(http://6269-9001.zippykid.netdna-cdn.com/wp-content/uploads/2013/11/Dark-Wood-Background.jpg);
+}
+
+.skybox{
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    top: 0;
+    left: 0;
+    background: red;
+    background-size: 400% 300%;
+    -webkit-backface-visibility: hidden;   
+    -webkit-transform-origin: 0 0;
+    background-image: url(/Skybox_example.png);
+}
+
+/*todo: look for a css selector like nth-that-has-class*/
+.skybox.nth0{
+    /*back*/
+    background-position: 0;
+}
+.skybox.nth1{
+    /*back*/
+    background-position: 33%;
+}
+.skybox.nth2{
+    /*back*/
+    background-position: 66%;
+}
+.skybox.nth3{
+    /*back*/
+    background-position: 100%;
+}
+.skybox.nth4{
+    /*back*/
+    background-position: 33% 0;
+}
+.skybox.nth5{
+    /*back*/
+    background-position: 33% 100%;
 }
