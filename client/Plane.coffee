@@ -11,10 +11,10 @@ class @Plane
             set: (newParent) ->                
                 # Steps I'm taking to animate the change of parent CS (Plane):
                 # 1: Compute our current real world coordinates (the absolute transform oldM3d)
-                # 2: Change the parent CS 
+                # 2: Change the parent Plane 
                 #      (note that now our real world coordinates changed newM3d)
                 # 3: Find the transform (newM3d_to_oldM3d) that leaves us in exactly the same position 
-                #    we were before even though our CS is now relative to a different parent (newParent)
+                #    we were before even though our Plane is now relative to a different parent (newParent)
                 #    and apply it instantaneously.
                 #    Now we are exactly were we started, but our transform is relative to the new parent
                 # 4: Compute oldM3d_to_newM3d (by inverting newM3d_to_oldM3d), decompose it in its primitive 
@@ -34,7 +34,7 @@ class @Plane
 
                 oldM3d_to_newM3d = newM3d_to_oldM3d.inverse()
                 t = unmatrix(oldM3d_to_newM3d)
-                t.duration = 10000;
+                t.duration = 1000;
                 this.do t
 
                 @_parent
@@ -49,7 +49,7 @@ class @Plane
         m3d = new WebKitCSSMatrix(@ownMatrix)   
         discardUpTo = 0
         for i, o of @transformQueue
-            factor = o.easing (now - o.start - o.delay) / o.duration
+            factor = o.ease (now - o.start - o.delay) / o.duration
             if o.translate?
                 # todo: how to put every func parameter in its own line?
                 m3d = m3d.translate (o.translate.x ? 0) * factor, (o.translate.y ? 0) * factor, (o.translate.z ? 0) * factor
@@ -85,9 +85,9 @@ class @Plane
         # o.rotate
         # o.around
 
-        o.duration ?= 10000
+        o.duration ?= 1000
         o.delay ?= 0
-        o.easing ?= d3.ease("cubic-in-out")
+        o.ease ?= d3.ease("cubic-in-out")
         o.start ?= +new Date()
 
         @transformQueue.push o
