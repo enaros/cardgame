@@ -1,7 +1,7 @@
 # skybox: http://en.wikibooks.org/wiki/Game_Creation_with_XNA/3D_Development/Skybox
 # 
-width = 0
-height = 0
+width = 1024
+height = 768
 
 
 @camera = new Plane parent: null
@@ -58,25 +58,32 @@ cilinder = () ->
         
         @cards.push (plane)
         
-cilinder()
+# cilinder()
 
 grid = ()-> 
     cardsCount = 40
     columns = 10
-    for i in [1..cardsCount]
+    for i in [0..cardsCount-1]
         plane = new Plane parent: @table
         plane.do({
             translate:{
-                x: 110 * (i % columns )
-                y: Math.floor(i / columns) * 160
+                x: width/2
+                y: height/2
                 z: 1
             }
+            duration: 0,
+        })
+        plane.do({
+            translate:{
+                x: 110 * (i % columns ) - width/2
+                y: Math.floor(i / columns) * 160 - height/2
+            }
             duration: 100 *i,
-            delay: 50*i,
+            delay: 10*i,
             ease: d3.ease("bounce")
         })
         @cards.push (plane)
-# grid()
+grid()
 #
 ########
 camera.do translate: { z: -800}
