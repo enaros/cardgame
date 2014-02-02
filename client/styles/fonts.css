@@ -5,7 +5,7 @@ body {
 }
 
 .viewport { 
-    background: -webkit-gradient(radial, center center, 360, center center, 1200, from(rgba(0,0,0,0)), to(rgba(0,0,0,1))), url(/tweed.png)
+    /*background: -webkit-gradient(radial, center center, 360, center center, 1200, from(rgba(0,0,0,0)), to(rgba(0,0,0,1))), url(/tweed.png)*/
 }
 
 code {

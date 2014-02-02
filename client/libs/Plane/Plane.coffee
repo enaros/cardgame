@@ -67,9 +67,9 @@ class @Plane
                 m3d = m3d.skewX (o.skew.x ? 0) * factor
                 m3d = m3d.skewY (o.skew.y ? 0) * factor
             
-            # if o.scale?
-            #   #todo: implement scale (unmatrix gives 0 instead of 1 if no change expected)
-            #   m3d = m3d.scale (o.scale.x ? 0, o.scale.y ? 0, o.scale.z ? 0
+            if o.scale?
+                m3d = m3d.scale o.scale.x ? 1, o.scale.y ? 1, o.scale.z ? 1
+
             if discardUpTo == +i and factor == 1
                 @ownMatrix = m3d 
                 discardUpTo = +i+1
