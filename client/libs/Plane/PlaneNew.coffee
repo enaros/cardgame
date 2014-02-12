@@ -44,8 +44,8 @@ class @Plane
         scale: {x:1,y:1,z:1}
         skew: {x:0,y:0}
         translate: {x:0,y:0,z:0}
-        around: {x:0,y:0,z:0}
-        duration : 1000
+        around: {x:"50%",y:"50%",z:"50%"}# origin is center of plane
+        duration : 0
         delay : 0
         ease : d3.ease("cubic-in-out")
     }
@@ -60,7 +60,6 @@ class @Plane
 
         # {rotate:{x:0,y:0,z:0},scale:{x:1,y:1,z:1},skew:{x:0,y:0},translate:{x:0,y:0,z:0}}
         @transform = @identityTransform()
-        @translateXY("-50%")
 
     Object.defineProperties @prototype,
         parent:
@@ -96,17 +95,17 @@ class @Plane
 
                 @_parent
                
-    absoluteMatrix: ->      
+    absoluteMatrix: (timestamp)->      
         # todo: learn how to code properly in coffescript and make this mess readable 
         # todo: "now" should be the frame timestamp, not the date timestamp, 
         #       but we are not in requestanimationframe :(
         # todo: optimization merge all consecutive complete transforms (not only thouse in the head of the queue)
         #       
-        now = +new Date() 
+        timestamp ?= +new Date() 
         m3d = new WebKitCSSMatrix(@m3d)
         discardUpTo = 0
         for i, o of @transformQueue
-            factor = o.ease (now - o.start) / o.duration
+            factor = o.ease (timestamp - o.start) / o.duration
             if o.translate?
                 # todo: how to put every func parameter in its own line?
                 m3d = m3d.translate (o.translate.x ? 0) * factor, (o.translate.y ? 0) * factor, (o.translate.z ? 0) * factor
@@ -134,11 +133,11 @@ class @Plane
         @transformQueue = @transformQueue.slice discardUpTo
 
         if @parent?
-            @parent.absoluteMatrix().multiply m3d
+            @parent.absoluteMatrix(timestamp).multiply m3d
         else 
             m3d
     
-    do: () -> 
+    do: (duration) -> 
         for name, xyz of @transform
             for axis, value of xyz
                 if typeof value == "string" and value.slice(-1) == "%"
@@ -147,7 +146,7 @@ class @Plane
                         when "y" then parseFloat(value) / 100 * @height 
                         when "z" then 0   
         
-        
+        @transform.duration = duration if duration?
         @transform.start ?= +new Date()
         @transform.start += @transform.delay
               

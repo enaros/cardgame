@@ -4,9 +4,9 @@ height = $(window).height();
 console.log(width, height)
 @camera = new Plane parent: null, width: width, height: height
 @table = new Plane parent: @camera, width: width, height: height
-camera.translate("50%")
-camera.rotateX(40).aroundY('50%').translateZ(-200).do()
-@table.rotateX(90).aroundY('50%').do()
+camera.translateZ(-1000).do(1000)
+camera.rotateX(-40).do(1000)
+@table.rotateX(90).do(1000)
 
 #############
 # cards
@@ -15,17 +15,16 @@ camera.rotateX(40).aroundY('50%').translateZ(-200).do()
 @cards = []
 
 grid = ()-> 
-    cardsCount = 80
-    columns = 15
+    cardsCount = 40
+    columns = 10
     for i in [0 .. cardsCount - 1]
         plane = new Plane parent: @table, width: 100, height: 153, resolution: .75
         plane            
             .translateX( (i % columns * 100) + "%" )
             .translateY( Math.floor(i / columns) * 100 + "%" )
-            .duration(100 * i)
             .delay(10 * i)
             .ease(d3.ease("bounce"))
-            .do()
+            .do(100 * i)
         
         @cards.push(plane)
 
@@ -43,6 +42,7 @@ Template.main.rendered = =>
  # draw function
 #-------------------------------------------------------------------
 @draw = -> 
+    timestamp = +new Date();
     d3table = viewport.selectAll(".table").data([@table])
     d3table.enter()
         .append("div")
@@ -53,7 +53,7 @@ Template.main.rendered = =>
             #table.do({ rotate:{z:180}, around:{x:width/2 , y:height/2} })
         )
     d3table
-        .style("-webkit-transform", (d) -> d.absoluteMatrix().scale(1/d.resolution))
+        .style("-webkit-transform", (d) -> d.absoluteMatrix(timestamp).scale(1/d.resolution))
     
 
     d3cards = viewport.selectAll(".card").data(@cards)        
@@ -71,7 +71,7 @@ Template.main.rendered = =>
 
 
     d3cards
-        .style("-webkit-transform", (d) -> d.absoluteMatrix().scale(1/d.resolution))
+        .style("-webkit-transform", (d) -> d.absoluteMatrix(timestamp).scale(1/d.resolution))
         .style("z-index", (d) -> 1
             #todo compute distance and set z-index to fix chrome aparently missing z-buffer 
         )
@@ -86,23 +86,23 @@ $(document).keydown (e) ->
     if not e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
-                camera.rotateY(10).aroundXY('50%').do(1000);
+                table.rotateZ(30).do(1000);
             when 38  
-                camera.rotateX(10).aroundXY('50%').do(1000);
+                camera.rotateX(30).do(1000);
             when 39  
-                camera.rotateY(-10).aroundXY('50%').do(1000);
+                table.rotateZ(-30).do(1000);
             when 40  
-                camera.rotateX(-10).aroundXY('50%').do(1000);
+                camera.rotateX(-30).do(1000);
     if not e.shiftKey and e.altKey
         switch e.keyCode
             when 37  
-                camera.rotateZ(180).aroundXY('50%').do(1000);
+                camera.rotateZ(180).do(1000);
             when 38  
-                camera.rotateX(10).aroundXY('50%').do(1000);
+                camera.rotateX(10).do(1000);
             when 39  
-                camera.rotateZ(-180).aroundXY('50%').do(1000);
+                camera.rotateZ(-180).do(1000);
             when 40  
-                camera.rotateX(-10).aroundXY('50%').do(1000);
+                camera.rotateX(-10).do(1000);
     if e.shiftKey and not e.altKey
         switch e.keyCode
             when 37  
@@ -113,5 +113,3 @@ $(document).keydown (e) ->
                 camera.translateX(-10).do(1000);
             when 40  
                 camera.translateZ(-10).do(1000);
-
-        
